@@ -24,9 +24,9 @@ h1 {
 
 button {
   display: block;
-  width: 250px;
+  width: 260px;
   margin: 15px auto;
-  padding: 15px;
+  padding: 16px;
   font-size: 18px;
   border: none;
   border-radius: 12px;
@@ -46,20 +46,14 @@ button:hover {
 <div class="container">
   <h1>Testes Cognitivos</h1>
 
-  <button onclick="abrir('gonogo.html')">
+  <button onclick="location.href='index_old.html'">
     Go / No-Go
   </button>
 
-  <button onclick="abrir('digits.html')">
-    Memória (Dígitos)
+  <button onclick="location.href='digits.html'">
+    Teste de Memória
   </button>
 </div>
-
-<script>
-function abrir(pagina) {
-  window.location.href = pagina;
-}
-</script>
 
 </body>
 </html>
