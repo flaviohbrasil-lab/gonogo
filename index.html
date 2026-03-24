@@ -1,447 +1,65 @@
-<!doctype html>
-<html lang="pt-br">
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Go/No-Go (Browser)</title>
+<meta charset="UTF-8">
+<title>Bateria de Testes</title>
 
-  <!-- jsPsych via CDN -->
-  <link href="https://unpkg.com/jspsych@7.3.3/css/jspsych.css" rel="stylesheet" />
-  <script src="https://unpkg.com/jspsych@7.3.3"></script>
-  <script src="https://unpkg.com/@jspsych/plugin-html-keyboard-response@1.1.2"></script>
-  <script src="https://unpkg.com/@jspsych/plugin-instructions@1.1.2"></script>
-  <script src="https://unpkg.com/@jspsych/plugin-call-function@1.1.2"></script>
+<style>
+body {
+  font-family: Arial;
+  background: #f2f4f7;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 100vh;
+}
 
-  <style>
-    body { background: #111; }
-    .jspsych-content { max-width: 860px; }
-    .stim {
-      font-size: 96px;
-      color: #f5f5f5;
-      font-weight: 700;
-      letter-spacing: 0.04em;
-    }
-    .sub {
-      font-size: 18px;
-      color: #d0d0d0;
-      margin-top: 16px;
-      line-height: 1.4;
-    }
-    .kbd { padding: 2px 8px; border: 1px solid #666; border-radius: 6px; background: #1c1c1c; }
-    .note { font-size: 14px; color: #bdbdbd; margin-top: 10px; }
-    .ok { color: #7CFC90; }
-    .bad { color: #FF6B6B; }
-  </style>
+.container {
+  text-align: center;
+}
+
+h1 {
+  margin-bottom: 40px;
+}
+
+button {
+  display: block;
+  width: 250px;
+  margin: 15px auto;
+  padding: 15px;
+  font-size: 18px;
+  border: none;
+  border-radius: 12px;
+  background: #3aa6b9;
+  color: white;
+  cursor: pointer;
+}
+
+button:hover {
+  background: #2d8a9a;
+}
+</style>
 </head>
 
 <body>
+
+<div class="container">
+  <h1>Testes Cognitivos</h1>
+
+  <button onclick="abrir('gonogo.html')">
+    Go / No-Go
+  </button>
+
+  <button onclick="abrir('digits.html')">
+    Memória (Dígitos)
+  </button>
+</div>
+
 <script>
-  /******************************************************************
-   * Go/No-Go (2–3 min)
-   * GO: letra "X" -> pressionar ESPAÇO o mais rápido possível
-   * NO-GO: letra "K" -> NÃO pressionar nada
-   *
-   * Saídas:
-   * - false alarms (resposta em NO-GO)
-   * - omissions (sem resposta em GO)
-   * - RT médio e variabilidade (SD, CV) em GO corretos
-   * - acurácia geral e por condição
-   *
-   * Nota de design:
-   * - resposta única: espaço
-   * - janela de resposta: 750 ms (ajuste se quiser)
-   ******************************************************************/
-
-  // ---------- PARÂMETROS AJUSTÁVEIS ----------
-  const CONFIG = {
-    participant_id: "P" + Math.random().toString(16).slice(2, 8).toUpperCase(),
-    go_stim: "X",
-    nogo_stim: "K",
-    response_key: " ",
-    // timings
-    fixation_ms: 400,
-    stim_ms: 750,        // janela máxima para responder
-    iti_ms: 600,
-    // estrutura
-    practice_trials: 16,
-    main_trials: 120,    // ~2–3 min dependendo de máquina/pessoa
-    nogo_ratio: 0.25,    // 25% No-Go / 75% Go
-    // qualidade de dados
-    min_rt_ms: 150       // filtra RTs impossíveis
-  };
-
-  // ---------- HELPERS ----------
-  function shuffle(array) {
-    for (let i = array.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [array[i], array[j]] = [array[j], array[i]];
-    }
-    return array;
-  }
-
-  function mean(arr) {
-    const a = arr.filter(x => Number.isFinite(x));
-    if (a.length === 0) return null;
-    return a.reduce((s, x) => s + x, 0) / a.length;
-  }
-
-  function sd(arr) {
-    const a = arr.filter(x => Number.isFinite(x));
-    if (a.length < 2) return null;
-    const m = mean(a);
-    const v = a.reduce((s, x) => s + (x - m) ** 2, 0) / (a.length - 1);
-    return Math.sqrt(v);
-  }
-
-  function csvEscape(v) {
-    if (v === null || v === undefined) return "";
-    const s = String(v);
-    if (s.includes(",") || s.includes('"') || s.includes("\n")) {
-      return `"${s.replaceAll('"', '""')}"`;
-    }
-    return s;
-  }
-
-  function downloadCSV(filename, rows) {
-    const header = Object.keys(rows[0] || {});
-    const lines = [];
-    lines.push(header.map(csvEscape).join(","));
-    for (const r of rows) {
-      lines.push(header.map(h => csvEscape(r[h])).join(","));
-    }
-    const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    a.remove();
-    URL.revokeObjectURL(url);
-  }
-
-  // ---------- GERA TRIALS ----------
-  function buildTrials(n) {
-    const nogo_n = Math.round(n * CONFIG.nogo_ratio);
-    const go_n = n - nogo_n;
-    const trials = [];
-
-    for (let i = 0; i < go_n; i++) {
-      trials.push({ condition: "GO", stim: CONFIG.go_stim });
-    }
-    for (let i = 0; i < nogo_n; i++) {
-      trials.push({ condition: "NO_GO", stim: CONFIG.nogo_stim });
-    }
-    return shuffle(trials);
-  }
-
-  // ---------- JSPSYCH INIT ----------
-  const jsPsych = initJsPsych({
-    on_finish: () => {
-      // no-op; fazemos export no final via timeline
-    }
-  });
-
-  // ---------- COMPONENTES ----------
-  const intro = {
-    type: jsPsychInstructions,
-    pages: [
-      `
-      <div style="color:#f5f5f5">
-        <h2>Go/No-Go</h2>
-        <p>Você verá uma letra grande no centro da tela.</p>
-        <p><b>GO</b>: quando aparecer <span class="kbd">${CONFIG.go_stim}</span>, pressione <span class="kbd">ESPAÇO</span> o mais rápido possível.</p>
-        <p><b>NO-GO</b>: quando aparecer <span class="kbd">${CONFIG.nogo_stim}</span>, <b>não</b> pressione nada.</p>
-        <p class="note">Importante: rapidez conta, mas evite apertar por impulso.</p>
-      </div>
-      `,
-      `
-      <div style="color:#f5f5f5">
-        <p>Agora faremos um treino curto com feedback.</p>
-        <p>Pressione <span class="kbd">Avançar</span> para começar.</p>
-      </div>
-      `
-    ],
-    show_clickable_nav: true
-  };
-
-  const fixation = {
-    type: jsPsychHtmlKeyboardResponse,
-    stimulus: `<div class="stim">+</div>`,
-    choices: "NO_KEYS",
-    trial_duration: CONFIG.fixation_ms,
-    data: { phase: "fixation" }
-  };
-
-  function makeStimTrial(t, phase, feedback=false) {
-    const isGo = t.condition === "GO";
-
-    // trial do estímulo
-    const stimTrial = {
-      type: jsPsychHtmlKeyboardResponse,
-      stimulus: `<div class="stim">${t.stim}</div>`,
-      choices: isGo ? [CONFIG.response_key] : [CONFIG.response_key], // capturamos espaço em ambos, para detectar FA no No-Go
-      trial_duration: CONFIG.stim_ms,
-      response_ends_trial: true,
-      data: {
-        phase,
-        condition: t.condition,
-        stim: t.stim,
-        participant_id: CONFIG.participant_id
-      },
-      on_finish: (data) => {
-        const responded = data.response !== null;
-        const rt = (responded && data.rt !== null) ? data.rt : null;
-
-        // Classificação
-        // GO correto: respondeu e rt >= min_rt
-        // GO omissão: não respondeu
-        // NO-GO correto: não respondeu
-        // NO-GO falso alarme: respondeu
-        let correct = 0;
-        let outcome = "";
-
-        if (t.condition === "GO") {
-          if (!responded) {
-            outcome = "OMISSION";
-            correct = 0;
-          } else if (rt !== null && rt >= CONFIG.min_rt_ms) {
-            outcome = "HIT";
-            correct = 1;
-          } else {
-            // respondeu rápido demais -> trata como resposta inválida/impulsiva
-            outcome = "TOO_FAST";
-            correct = 0;
-          }
-        } else { // NO_GO
-          if (!responded) {
-            outcome = "CORRECT_REJECTION";
-            correct = 1;
-          } else {
-            outcome = "FALSE_ALARM";
-            correct = 0;
-          }
-        }
-
-        data.responded = responded ? 1 : 0;
-        data.rt_clean = (t.condition === "GO" && outcome === "HIT") ? rt : null;
-        data.correct = correct;
-        data.outcome = outcome;
-      }
-    };
-
-    const iti = {
-      type: jsPsychHtmlKeyboardResponse,
-      stimulus: `<div style="height:48px;"></div>`,
-      choices: "NO_KEYS",
-      trial_duration: CONFIG.iti_ms,
-      data: { phase: "iti" }
-    };
-
-    if (!feedback) {
-      return [fixation, stimTrial, iti];
-    }
-
-    // feedback: baseado no último trial
-    const fb = {
-      type: jsPsychHtmlKeyboardResponse,
-      choices: "NO_KEYS",
-      trial_duration: 450,
-      stimulus: () => {
-        const last = jsPsych.data.get().last(1).values()[0];
-        const ok = last.correct === 1;
-        const msg = ok ? `<span class="ok">Certo</span>` : `<span class="bad">Errado</span>`;
-        const extra =
-          (last.outcome === "OMISSION") ? `<div class="sub">Você não respondeu no GO.</div>` :
-          (last.outcome === "FALSE_ALARM") ? `<div class="sub">Você respondeu no NO-GO.</div>` :
-          (last.outcome === "TOO_FAST") ? `<div class="sub">Resposta rápida demais (impulso).</div>` :
-          ``;
-        return `<div>${msg}${extra}</div>`;
-      },
-      data: { phase: "feedback" }
-    };
-
-    return [fixation, stimTrial, fb, iti];
-  }
-
-  // ---------- TREINO ----------
-  const practiceTrials = buildTrials(CONFIG.practice_trials);
-  const practiceTimeline = [];
-  for (const t of practiceTrials) {
-    practiceTimeline.push(...makeStimTrial(t, "practice", true));
-  }
-
-  const practiceEnd = {
-    type: jsPsychInstructions,
-    pages: [
-      `
-      <div style="color:#f5f5f5">
-        <p>Treino concluído.</p>
-        <p>Agora começa a tarefa principal (sem feedback).</p>
-        <p>Pressione <span class="kbd">Avançar</span> para iniciar.</p>
-      </div>
-      `
-    ],
-    show_clickable_nav: true
-  };
-
-  // ---------- BLOCO PRINCIPAL ----------
-  const mainTrials = buildTrials(CONFIG.main_trials);
-  const mainTimeline = [];
-  for (const t of mainTrials) {
-    mainTimeline.push(...makeStimTrial(t, "main", false));
-  }
-
-  // ---------- CÁLCULO DE MÉTRICAS + EXPORT ----------
-  const summarizeAndExport = {
-    type: jsPsychCallFunction,
-    func: () => {
-      const rows = jsPsych.data.get().filter({ phase: "main" }).values();
-
-      const go = rows.filter(r => r.condition === "GO");
-      const nogo = rows.filter(r => r.condition === "NO_GO");
-
-      const go_hits = go.filter(r => r.outcome === "HIT");
-      const go_omissions = go.filter(r => r.outcome === "OMISSION");
-      const go_too_fast = go.filter(r => r.outcome === "TOO_FAST");
-
-      const nogo_cr = nogo.filter(r => r.outcome === "CORRECT_REJECTION");
-      const nogo_fa = nogo.filter(r => r.outcome === "FALSE_ALARM");
-
-      const rt_hits = go_hits.map(r => r.rt_clean).filter(x => Number.isFinite(x));
-      const rt_mean = mean(rt_hits);
-      const rt_sd = sd(rt_hits);
-      const rt_cv = (rt_mean && rt_sd) ? (rt_sd / rt_mean) : null;
-
-      const acc_overall = mean(rows.map(r => r.correct)) * 100;
-      const acc_go = mean(go.map(r => r.correct)) * 100;
-      const acc_nogo = mean(nogo.map(r => r.correct)) * 100;
-
-      const summary = {
-        participant_id: CONFIG.participant_id,
-        date_iso: new Date().toISOString(),
-        main_trials: CONFIG.main_trials,
-        nogo_ratio: CONFIG.nogo_ratio,
-        go_n: go.length,
-        nogo_n: nogo.length,
-
-        go_hits: go_hits.length,
-        go_omissions: go_omissions.length,
-        go_too_fast: go_too_fast.length,
-
-        nogo_correct_rejections: nogo_cr.length,
-        nogo_false_alarms: nogo_fa.length,
-
-        accuracy_overall_pct: acc_overall,
-        accuracy_go_pct: acc_go,
-        accuracy_nogo_pct: acc_nogo,
-
-        rt_go_hits_mean_ms: rt_mean,
-        rt_go_hits_sd_ms: rt_sd,
-        rt_go_hits_cv: rt_cv,
-
-        min_rt_ms_filter: CONFIG.min_rt_ms,
-        stim_window_ms: CONFIG.stim_ms
-      };
-
-      // salva no dataset para exibir e exportar também
-      jsPsych.data.write(summary);
-
-      // export CSV (main trials + 1 linha de summary no final)
-      const trialRows = jsPsych.data.get().filter({ phase: "main" }).values().map(r => ({
-        participant_id: r.participant_id,
-        phase: r.phase,
-        condition: r.condition,
-        stim: r.stim,
-        rt_ms: r.rt,
-        rt_clean_ms: r.rt_clean,
-        responded: r.responded,
-        correct: r.correct,
-        outcome: r.outcome,
-        time_elapsed_ms: r.time_elapsed
-      }));
-
-      const summaryRow = {
-        participant_id: summary.participant_id,
-        phase: "SUMMARY",
-        condition: "",
-        stim: "",
-        rt_ms: "",
-        rt_clean_ms: "",
-        responded: "",
-        correct: "",
-        outcome: "",
-        time_elapsed_ms: "",
-        accuracy_overall_pct: summary.accuracy_overall_pct,
-        accuracy_go_pct: summary.accuracy_go_pct,
-        accuracy_nogo_pct: summary.accuracy_nogo_pct,
-        go_hits: summary.go_hits,
-        go_omissions: summary.go_omissions,
-        go_too_fast: summary.go_too_fast,
-        nogo_false_alarms: summary.nogo_false_alarms,
-        rt_go_hits_mean_ms: summary.rt_go_hits_mean_ms,
-        rt_go_hits_sd_ms: summary.rt_go_hits_sd_ms,
-        rt_go_hits_cv: summary.rt_go_hits_cv
-      };
-
-      // Para manter CSV simples, adiciona colunas extras só na summary (as faltantes ficam vazias nos trials)
-      // Vamos padronizar as colunas juntando chaves
-      const allKeys = new Set();
-      for (const r of trialRows) Object.keys(r).forEach(k => allKeys.add(k));
-      Object.keys(summaryRow).forEach(k => allKeys.add(k));
-
-      function normalizeRow(r) {
-        const out = {};
-        for (const k of allKeys) out[k] = (k in r) ? r[k] : "";
-        return out;
-      }
-
-      const csvRows = [...trialRows.map(normalizeRow), normalizeRow(summaryRow)];
-      const filename = `gonogo_${summary.participant_id}_${summary.date_iso.slice(0,19).replaceAll(":","-")}.csv`;
-      downloadCSV(filename, csvRows);
-
-      // guarda summary para exibição
-      window.__GONOGO_SUMMARY__ = summary;
-    }
-  };
-
-  const endScreen = {
-    type: jsPsychHtmlKeyboardResponse,
-    choices: ["enter"],
-    stimulus: () => {
-      const s = window.__GONOGO_SUMMARY__;
-      const fmt = (x, d=1) => (x === null || x === undefined || !Number.isFinite(x)) ? "—" : Number(x).toFixed(d);
-
-      return `
-        <div style="color:#f5f5f5">
-          <h2>Concluído</h2>
-          <p>O arquivo CSV foi baixado automaticamente.</p>
-
-          <h3>Resumo (bloco principal)</h3>
-          <ul>
-            <li>Acurácia geral: <b>${fmt(s.accuracy_overall_pct)}%</b></li>
-            <li>GO – acertos (hits): <b>${s.go_hits}</b> | omissões: <b>${s.go_omissions}</b> | respostas rápidas demais: <b>${s.go_too_fast}</b></li>
-            <li>NO-GO – falsos alarmes: <b>${s.nogo_false_alarms}</b> | rejeições corretas: <b>${s.nogo_correct_rejections}</b></li>
-            <li>RT (GO acertos): média <b>${fmt(s.rt_go_hits_mean_ms)} ms</b> | SD <b>${fmt(s.rt_go_hits_sd_ms)} ms</b> | CV <b>${fmt(s.rt_go_hits_cv, 3)}</b></li>
-          </ul>
-
-          <p class="note">Pressione <span class="kbd">ENTER</span> para finalizar.</p>
-        </div>
-      `;
-    }
-  };
-
-  // ---------- TIMELINE ----------
-  const timeline = [];
-  timeline.push(intro);
-  timeline.push(...practiceTimeline);
-  timeline.push(practiceEnd);
-  timeline.push(...mainTimeline);
-  timeline.push(summarizeAndExport);
-  timeline.push(endScreen);
-
-  jsPsych.run(timeline);
+function abrir(pagina) {
+  window.location.href = pagina;
+}
 </script>
+
 </body>
 </html>
-
