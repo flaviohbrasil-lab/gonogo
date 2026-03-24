@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Teste de Memória</title>
+  <style>
+    :root {
+      --bg: #eef1f4;
+      --card: rgba(255,255,255,0.92);
+      --text: #2d2d2d;
+      --muted: #5b5b5b;
+      --accent: #62b7c5;
+      --accent-dark: #4ea7b6;
+      --border: rgba(0,0,0,0.08);
+      --shadow: 0 8px 20px rgba(0,0,0,0.12);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: Arial, Helvetica, sans-serif;
+      color: var(--text);
+      background:
+        radial-gradient(circle at 12% 22%, rgba(0,0,0,0.05) 0 10px, transparent 11px),
+        radial-gradient(circle at 30% 18%, rgba(0,0,0,0.05) 0 7px, transparent 8px),
+        radial-gradient(circle at 68% 25%, rgba(0,0,0,0.05) 0 8px, transparent 9px),
+        radial-gradient(circle at 85% 42%, rgba(0,0,0,0.05) 0 10px, transparent 11px),
+        linear-gradient(120deg, rgba(0,0,0,0.03) 1px, transparent 1px),
+        linear-gradient(35deg, rgba(0,0,0,0.03) 1px, transparent 1px),
+        #efefef;
+      background-size: 180px 180px, 220px 220px, 210px 210px, 260px 260px, 120px 120px, 140px 140px, auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .app {
+      width: min(860px, 100%);
+      background: transparent;
+    }
+
+    .screen {
+      background: var(--card);
+      border-radius: 28px;
+      padding: 28px 26px 32px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(2px);
+    }
+
+    .hidden { display: none !important; }
+    .center { text-align: center; }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.1rem, 4vw, 3.4rem);
+      font-weight: 800;
+      letter-spacing: -0.03em;
+    }
+
+    .subtitle-top {
+      margin-top: 16px;
+      font-size: clamp(1.2rem, 2.5vw, 2rem);
+      font-weight: 800;
+      letter-spacing: 0.03em;
+      text-transform: uppercase;
+      color: #444;
+    }
+
+    .subtitle-main {
+      margin-top: 12px;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      font-weight: 300;
+      color: #4a4a4a;
+    }
+
+        .pad {
+      margin: 26px auto 18px;
+      width: 340px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+      justify-items: center;
+    }
+
+    .pad-btn {
+      width: 92px;
+      height: 92px;
+      border: none;
+      border-radius: 50%;
+      background: #fff;
+      color: #202020;
+      font-size: 2.2rem;
+      font-weight: 700;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.18);
+      cursor: pointer;
+      transition: transform 0.08s ease, background 0.18s ease, color 0.18s ease;
+    }
+
+    .pad-btn:active,
+    .pad-btn:hover {
+      transform: scale(0.98);
+      background: var(--accent);
+      color: white;
+    }
+
+    .instructions {
+      width: min(600px, 100%);
+      margin: 24px auto 0;
+      font-size: clamp(1.2rem, 2.3vw, 1.6rem);
+      line-height: 1.55;
+      color: #4c4c4c;
+    }
+
+    .instructions ol {
+      margin: 0;
+      padding-left: 36px;
+    }
+
+    .instructions li {
+      margin-bottom: 16px;
+    }
+
+    .instructions strong { font-weight: 800; }
+
+    .primary-btn, .secondary-btn {
+      border: none;
+      border-radius: 999px;
+      padding: 18px 38px;
+      font-size: 1.2rem;
+      cursor: pointer;
+      transition: background 0.2s ease, transform 0.08s ease;
+    }
+
+    .primary-btn {
+      background: var(--accent);
+      color: white;
+      min-width: 250px;
+    }
+
+    .primary-btn:hover { background: var(--accent-dark); }
+    .primary-btn:active, .secondary-btn:active { transform: scale(0.985); }
+
+    .secondary-btn {
+      background: white;
+      color: var(--text);
+      border: 1px solid var(--border);
+      min-width: 160px;
+    }
+
+    .button-row {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 28px;
+    }
+
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin-bottom: 20px;
+      font-weight: 700;
+      color: #444;
+    }
+
+    .pill {
+      background: rgba(98,183,197,0.14);
+      color: #245661;
+      border-radius: 999px;
+      padding: 8px 14px;
+      font-size: 0.98rem;
+    }
+
+    .stimulus-box {
+      min-height: 170px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 22px;
+      background: rgba(255,255,255,0.9);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+      font-size: clamp(4rem, 12vw, 7rem);
+      font-weight: 800;
+      margin: 18px 0 20px;
+    }
+
+    .response-panel {
+      width: min(520px, 100%);
+      margin: 0 auto;
+      text-align: center;
+    }
+
+    .response-display {
+      min-height: 68px;
+      margin-bottom: 20px;
+      border-radius: 16px;
+      background: rgba(255,255,255,0.95);
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.08);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      letter-spacing: 0.18em;
+      font-weight: 700;
+      padding: 10px 14px;
+    }
+
+    .response-actions {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 18px;
+    }
+
+    .mini-btn {
+      border: none;
+      border-radius: 14px;
+      padding: 12px 16px;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      background: white;
+      color: #333;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    .message {
+      margin-top: 16px;
+      min-height: 28px;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+
+    .ok { color: #0f6a3d; }
+    .bad { color: #a22b2b; }
+
+    .transition-box {
+      width: min(620px, 100%);
+      margin: 18px auto 0;
+      background: rgba(255,255,255,0.95);
+      border-radius: 22px;
+      padding: 24px 20px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+    }
+
+    .transition-box h2 {
+      margin: 0 0 12px 0;
+      font-size: clamp(1.8rem, 3vw, 2.6rem);
+    }
+
+    .transition-box p {
+      margin: 8px 0;
+      font-size: 1.15rem;
+      line-height: 1.5;
+      color: #4c4c4c;
+    }
+
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 16px;
+      margin-top: 18px;
+    }
+
+    .result-card {
+      background: rgba(255,255,255,0.96);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: inset 0 0 0 1px rgba(0,0,0,0.06);
+    }
+
+    .result-card h3 {
+      margin-top: 0;
+      margin-bottom: 12px;
+    }
+
+    .result-card p {
+      margin: 8px 0;
+      font-size: 1rem;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: rgba(255,255,255,0.96);
+      border-radius: 16px;
+      overflow: hidden;
+      font-size: 0.95rem;
+    }
+
+    th, td {
+      padding: 10px 8px;
+      border-bottom: 1px solid rgba(0,0,0,0.08);
+      text-align: left;
+    }
+
+    th {
+      background: rgba(98,183,197,0.16);
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 10px;
+    }
+
+    @media (max-width: 640px) {
+      .screen { padding: 22px 16px 26px; }
+      .pad { width: 100%; max-width: 300px; gap: 14px; }
+      .pad-btn { width: 80px; height: 80px; font-size: 2rem; }
+      .instructions { font-size: 1.05rem; }
+    }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <section id="startScreen" class="screen center">
+      <h1>Teste de Memória</h1>
+      <div class="subtitle-top">Cognição</div>
+      <div class="subtitle-main">Dígitos Diretos e Indiretos</div>
+
+      <div class="pad" aria-hidden="true">
+        <button class="pad-btn" tabindex="-1">1</button>
+        <button class="pad-btn" tabindex="-1">2</button>
+        <button class="pad-btn" tabindex="-1">3</button>
+        <button class="pad-btn" tabindex="-1">4</button>
+        <button class="pad-btn" tabindex="-1">5</button>
+        <button class="pad-btn" tabindex="-1">6</button>
+        <button class="pad-btn" tabindex="-1">7</button>
+        <button class="pad-btn" tabindex="-1">8</button>
+        <button class="pad-btn" tabindex="-1">9</button>
+      </div>
+
+      <div class="instructions">
+        <ol>
+          <li>Você verá uma série de <strong>números</strong>, um de cada vez.</li>
+          <li>Use o <strong>teclado numérico</strong> para repetir os números na mesma ordem em que aparecerem.</li>
+          <li>Depois, você fará a parte em <strong>ordem inversa</strong>.</li>
+          <li>Responda com a maior <strong>precisão</strong> possível.</li>
+        </ol>
+      </div>
+
+      <div class="button-row">
+        <button id="fullscreenBtn" class="secondary-btn">Tela cheia</button>
+        <button id="startBtn" class="primary-btn">Iniciar</button>
+      </div>
+    </section>
+
+    <section id="testScreen" class="screen hidden center">
+      <div class="status-bar">
+        <div>
+          <span class="pill" id="phasePill">Parte: Direta</span>
+          <span class="pill" id="spanPill">Span: 2</span>
+          <span class="pill" id="trialPill">Tentativa: 1/2</span>
+        </div>
+        <div class="pill" id="statusText">Prepare-se</div>
+      </div>
+
+      <div class="stimulus-box" id="stimulusBox">+</div>
+      <div id="transitionPanel" class="transition-box hidden">
+        <h2>Agora começa a ordem inversa</h2>
+        <p>Você verá novos números, um de cada vez.</p>
+        <p>Desta vez, repita os números na <strong>ordem inversa</strong>, ou seja, do último para o primeiro.</p>
+        <div class="button-row">
+          <button id="continueBackwardBtn" class="primary-btn">Continuar</button>
+        </div>
+      </div>
+
+      <div id="responsePanel" class="response-panel hidden">
+        <div class="response-display" id="responseDisplay">_</div>
+        <div class="pad" id="livePad"></div>
+        <div class="response-actions">
+          <button id="eraseBtn" class="mini-btn">Apagar</button>
+          <button id="clearBtn" class="mini-btn">Limpar</button>
+          <button id="confirmBtn" class="primary-btn">Confirmar</button>
+        </div>
+      </div>
+
+      <div id="message" class="message"></div>
+    </section>
+
+    <section id="resultScreen" class="screen hidden">
+      <h1 class="center">Resultado Final</h1>
+      <div class="results-grid">
+        <div class="result-card">
+          <h3>Parte Direta</h3>
+          <p><strong>Acertos:</strong> <span id="directHits"></span></p>
+          <p><strong>Span máximo:</strong> <span id="directMaxSpan"></span></p>
+        </div>
+        <div class="result-card">
+          <h3>Parte Indireta</h3>
+          <p><strong>Acertos:</strong> <span id="backwardHits"></span></p>
+          <p><strong>Span máximo:</strong> <span id="backwardMaxSpan"></span></p>
+        </div>
+        <div class="result-card">
+          <h3>Resumo Geral</h3>
+          <p><strong>Total de acertos:</strong> <span id="totalHits"></span></p>
+          <p><strong>Maior span geral:</strong> <span id="overallMaxSpan"></span></p>
+          <p><strong>Total de tentativas:</strong> <span id="totalTrials"></span></p>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Parte</th>
+              <th>Span</th>
+              <th>Tentativa</th>
+              <th>Sequência</th>
+              <th>Esperada</th>
+              <th>Resposta</th>
+              <th>Correto</th>
+            </tr>
+          </thead>
+          <tbody id="resultsBody"></tbody>
+        </table>
+      </div>
+
+      <div class="button-row">
+        <button id="downloadBtn" class="primary-btn">Baixar CSV</button>
+        <button id="restartBtn" class="secondary-btn">Reiniciar</button>
+      </div>
+    </section>
+  </div>
+
+  <script>
+    // CONFIG PADRÃO
+    // Altere apenas estes valores se quiser mudar os parâmetros do teste.
+    const DEFAULT_CONFIG = {
+      startSpan: 2,
+      maxSpan: 10,
+      trialsPerSpan: 2,
+      digitDurationMs: 1000,
+      isiMs: 220,
+      maxDigit: 9
+    };
+
+    const startScreen = document.getElementById('startScreen');
+    const testScreen = document.getElementById('testScreen');
+    const resultScreen = document.getElementById('resultScreen');
+    const fullscreenBtn = document.getElementById('fullscreenBtn');
+    const startBtn = document.getElementById('startBtn');
+    const stimulusBox = document.getElementById('stimulusBox');
+    const responsePanel = document.getElementById('responsePanel');
+    const responseDisplay = document.getElementById('responseDisplay');
+    const eraseBtn = document.getElementById('eraseBtn');
+    const clearBtn = document.getElementById('clearBtn');
+    const confirmBtn = document.getElementById('confirmBtn');
+    const message = document.getElementById('message');
+    const phasePill = document.getElementById('phasePill');
+    const spanPill = document.getElementById('spanPill');
+    const trialPill = document.getElementById('trialPill');
+    const statusText = document.getElementById('statusText');
+    const livePad = document.getElementById('livePad');
+    const resultsBody = document.getElementById('resultsBody');
+    const transitionPanel = document.getElementById('transitionPanel');
+    const continueBackwardBtn = document.getElementById('continueBackwardBtn');
+
+    const state = {
+      config: { ...DEFAULT_CONFIG },
+      phase: 'direct',
+      span: DEFAULT_CONFIG.startSpan,
+      trial: 1,
+      presented: [],
+      expected: '',
+      response: '',
+      errorsAtCurrentSpan: 0,
+      directHits: 0,
+      backwardHits: 0,
+      directMaxSpan: 0,
+      backwardMaxSpan: 0,
+      allResults: [],
+      locked: false
+    };
+
+    buildPad(DEFAULT_CONFIG.maxDigit);
+
+    fullscreenBtn.addEventListener('click', async () => {
+      if (!document.fullscreenElement) {
+        await document.documentElement.requestFullscreen?.();
+      } else {
+        await document.exitFullscreen?.();
+      }
+    });
+
+    startBtn.addEventListener('click', startTest);
+    document.getElementById('restartBtn').addEventListener('click', resetTest);
+    document.getElementById('downloadBtn').addEventListener('click', downloadCSV);
+    eraseBtn.addEventListener('click', eraseLastDigit);
+    clearBtn.addEventListener('click', clearResponse);
+    confirmBtn.addEventListener('click', submitResponse);
+    continueBackwardBtn.addEventListener('click', () => {
+      transitionPanel.classList.add('hidden');
+      nextTrial();
+    });
+
+    livePad.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-digit]');
+      if (!btn || state.locked) return;
+      const digit = btn.dataset.digit;
+      if (state.response.length >= state.span) return;
+      state.response += digit;
+      renderResponse();
+    });
+
+    function buildPad(maxDigit) {
+      livePad.innerHTML = '';
+      for (let i = 1; i <= maxDigit; i++) {
+        const button = document.createElement('button');
+        button.className = 'pad-btn';
+        button.dataset.digit = String(i);
+        button.textContent = String(i);
+        livePad.appendChild(button);
+      }
+    }
+
+    function startTest() {
+      state.config = { ...DEFAULT_CONFIG };
+      buildPad(state.config.maxDigit);
+      startScreen.classList.add('hidden');
+      resultScreen.classList.add('hidden');
+      testScreen.classList.remove('hidden');
+      resetStateValues();
+      nextTrial();
+    }
+
+    function resetStateValues() {
+      state.phase = 'direct';
+      state.span = state.config.startSpan;
+      state.trial = 1;
+      state.presented = [];
+      state.expected = '';
+      state.response = '';
+      state.errorsAtCurrentSpan = 0;
+      state.directHits = 0;
+      state.backwardHits = 0;
+      state.directMaxSpan = 0;
+      state.backwardMaxSpan = 0;
+      state.allResults = [];
+      state.locked = false;
+      renderResponse();
+      message.textContent = '';
+      message.className = 'message';
+      transitionPanel.classList.add('hidden');
+    }
+
+    function updateHeader(status) {
+      phasePill.textContent = `Parte: ${state.phase === 'direct' ? 'Direta' : 'Indireta'}`;
+      spanPill.textContent = `Span: ${state.span}`;
+      trialPill.textContent = `Tentativa: ${state.trial}/${state.config.trialsPerSpan}`;
+      statusText.textContent = status;
+    }
+
+    function generateSequence(length) {
+      const seq = [];
+      for (let i = 0; i < length; i++) {
+        let n;
+        do {
+          n = Math.floor(Math.random() * state.config.maxDigit) + 1;
+        } while (i > 0 && seq[i - 1] === n);
+        seq.push(n);
+      }
+      return seq;
+    }
+
+    async function nextTrial() {
+      state.locked = true;
+      transitionPanel.classList.add('hidden');
+      responsePanel.classList.add('hidden');
+      clearResponse();
+      message.textContent = '';
+      updateHeader('Prepare-se');
+      stimulusBox.textContent = '+';
+      await wait(900);
+
+      state.presented = generateSequence(state.span);
+      state.expected = state.phase === 'direct'
+        ? state.presented.join('')
+        : [...state.presented].reverse().join('');
+
+      updateHeader('Observe');
+      for (const digit of state.presented) {
+        stimulusBox.textContent = digit;
+        await wait(state.config.digitDurationMs);
+        stimulusBox.textContent = '';
+        await wait(state.config.isiMs);
+      }
+
+      updateHeader(state.phase === 'direct' ? 'Responda na mesma ordem' : 'Responda na ordem inversa');
+      stimulusBox.textContent = '?';
+      responsePanel.classList.remove('hidden');
+      state.locked = false;
+    }
+
+    function renderResponse() {
+      responseDisplay.textContent = state.response ? state.response.split('').join(' ') : '_';
+    }
+
+    function eraseLastDigit() {
+      if (state.locked) return;
+      state.response = state.response.slice(0, -1);
+      renderResponse();
+    }
+
+    function clearResponse() {
+      state.response = '';
+      renderResponse();
+    }
+
+    function submitResponse() {
+      if (state.locked) return;
+      if (state.response.length !== state.span) {
+        message.textContent = `Digite ${state.span} número${state.span > 1 ? 's' : ''}.`;
+        message.className = 'message bad';
+        return;
+      }
+
+      state.locked = true;
+      const isCorrect = state.response === state.expected;
+      const result = {
+        parte: state.phase === 'direct' ? 'Direta' : 'Indireta',
+        span: state.span,
+        tentativa: state.trial,
+        sequencia_apresentada: state.presented.join(' '),
+        resposta_esperada: state.expected,
+        resposta_dada: state.response,
+        correto: isCorrect ? 1 : 0,
+        acertos_diretos_ate_aqui: state.directHits,
+        acertos_indiretos_ate_aqui: state.backwardHits,
+        span_maximo_direto_ate_aqui: state.directMaxSpan,
+        span_maximo_indireto_ate_aqui: state.backwardMaxSpan
+      };
+
+      if (isCorrect) {
+        if (state.phase === 'direct') {
+          state.directHits += 1;
+          state.directMaxSpan = Math.max(state.directMaxSpan, state.span);
+        } else {
+          state.backwardHits += 1;
+          state.backwardMaxSpan = Math.max(state.backwardMaxSpan, state.span);
+        }
+        result.acertos_diretos_ate_aqui = state.directHits;
+        result.acertos_indiretos_ate_aqui = state.backwardHits;
+        result.span_maximo_direto_ate_aqui = state.directMaxSpan;
+        result.span_maximo_indireto_ate_aqui = state.backwardMaxSpan;
+        message.textContent = 'Correto';
+        message.className = 'message ok';
+      } else {
+        state.errorsAtCurrentSpan += 1;
+        message.textContent = 'Incorreto';
+        message.className = 'message bad';
+      }
+
+      state.allResults.push(result);
+      setTimeout(() => advanceFlow(), 700);
+    }
+
+    function advanceFlow() {
+      const reachedTrialLimit = state.trial === state.config.trialsPerSpan;
+      const shouldStopThisPhase = state.errorsAtCurrentSpan >= 2;
+
+      if (shouldStopThisPhase) {
+        if (state.phase === 'direct') {
+          showBackwardTransition();
+          return;
+        }
+        finishTest();
+        return;
+      }
+
+      if (!reachedTrialLimit) {
+        state.trial += 1;
+        nextTrial();
+        return;
+      }
+
+      if (state.span >= state.config.maxSpan) {
+        if (state.phase === 'direct') {
+          showBackwardTransition();
+          return;
+        }
+        finishTest();
+        return;
+      }
+
+      state.span += 1;
+      state.trial = 1;
+      state.errorsAtCurrentSpan = 0;
+      nextTrial();
+    }
+
+
+    function showBackwardTransition() {
+      state.phase = 'backward';
+      state.span = state.config.startSpan;
+      state.trial = 1;
+      state.errorsAtCurrentSpan = 0;
+      state.locked = true;
+      responsePanel.classList.add('hidden');
+      clearResponse();
+      updateHeader('Mudança de etapa');
+      stimulusBox.textContent = '↔';
+      message.textContent = '';
+      message.className = 'message';
+      transitionPanel.classList.remove('hidden');
+    }
+
+    function finishTest() {
+      testScreen.classList.add('hidden');
+      resultScreen.classList.remove('hidden');
+
+      document.getElementById('directHits').textContent = state.directHits;
+      document.getElementById('backwardHits').textContent = state.backwardHits;
+      document.getElementById('directMaxSpan').textContent = state.directMaxSpan;
+      document.getElementById('backwardMaxSpan').textContent = state.backwardMaxSpan;
+      document.getElementById('totalHits').textContent = state.directHits + state.backwardHits;
+      document.getElementById('overallMaxSpan').textContent = Math.max(state.directMaxSpan, state.backwardMaxSpan);
+      document.getElementById('totalTrials').textContent = state.allResults.length;
+
+      resultsBody.innerHTML = '';
+      state.allResults.forEach(item => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+          <td>${item.parte}</td>
+          <td>${item.span}</td>
+          <td>${item.tentativa}</td>
+          <td>${item.sequencia_apresentada}</td>
+          <td>${item.resposta_esperada}</td>
+          <td>${item.resposta_dada}</td>
+          <td>${item.correto ? 'Sim' : 'Não'}</td>
+        `;
+        resultsBody.appendChild(tr);
+      });
+    }
+
+    function downloadCSV() {
+      if (!state.allResults.length) return;
+      const headers = [
+        'parte','span','tentativa','sequencia_apresentada','resposta_esperada','resposta_dada','correto',
+        'acertos_diretos_ate_aqui','acertos_indiretos_ate_aqui','span_maximo_direto_ate_aqui','span_maximo_indireto_ate_aqui'
+      ];
+      const lines = [headers.join(',')];
+      state.allResults.forEach(row => {
+        lines.push(headers.map(h => `"${String(row[h] ?? '').replace(/"/g, '""')}"`).join(','));
+      });
+      lines.push('');
+      lines.push('"resumo","valor"');
+      lines.push(`"acertos_diretos","${state.directHits}"`);
+      lines.push(`"span_maximo_direto","${state.directMaxSpan}"`);
+      lines.push(`"acertos_indiretos","${state.backwardHits}"`);
+      lines.push(`"span_maximo_indireto","${state.backwardMaxSpan}"`);
+      lines.push(`"acertos_totais","${state.directHits + state.backwardHits}"`);
+      lines.push(`"span_maximo_geral","${Math.max(state.directMaxSpan, state.backwardMaxSpan)}"`);
+      lines.push(`"tentativas_totais","${state.allResults.length}"`);
+      const blob = new Blob([lines.join('\n')], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'teste_memoria_resultados.csv';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    function resetTest() {
+      resultScreen.classList.add('hidden');
+      transitionPanel.classList.add('hidden');
+      startScreen.classList.remove('hidden');
+    }
+
+    function wait(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+  </script>
+</body>
+</html>
